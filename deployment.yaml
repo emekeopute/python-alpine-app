@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-alpine-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: python-alpine-app
+  template:
+    metadata:
+      labels:
+        app: python-alpine-app
+    spec:
+      containers:
+      - name: python-alpine-app
+        image: emekeopute/python-alpine-app:latest
+        ports:
+        - containerPort: 8080
+      initContainers:
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:latest
+        args: ["--dockerfile=/app/Dockerfile",
+               "--context=dir:///app",
+               "--destination=emekeopute/python-alpine-app:latest"]
+        volumeMounts:
+        - name: docker-config
+          mountPath: /kaniko/.docker/
+        - name: app-src
+          mountPath: /app/
+      volumes:
+      - name: docker-config
+        secret:
+          secretName: dockerhub-credentials
+      - name: app-src
+        gitRepo:
+          repository: "https://github.com/emekeopute/python-alpine-app.git"
+          revision: "main"
